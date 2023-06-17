@@ -3,8 +3,10 @@ import math
 
 mp_drawing = mp.solutions.drawing_utils
 mp_pose = mp.solutions.pose
-cap = cv2.VideoCapture("squat.mp4")
+cap = cv2.VideoCapture("pull_up.mp4")
 push_up = None
+pull_up = None
+body_alignment = None
 
 def angle(point1, point2, point3):
     """ Calculate angle between two lines """
@@ -68,20 +70,37 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
         shoulder_hip_ankle_angle = angle(left_shoulder, left_hip, left_ankle)
         # elbow_wrist_angle_horizontal = math.degrees(math.atan2(right_wrist.x - right_elbow.x, right_wrist.y - right_elbow.y))
 
+        elbow_shoulder_hip_angle = angle(left_elbow, left_shoulder, left_hip)
+
+
+        #checking alignment of person
+        body_angle = angle_of_singleline(left_shoulder, left_ankle)
+        print("Body angle is: ", body_angle)
 
         # print("Shoulder-hip angle: ", shoulder_hip_angle)
-        print("wrist_elbow_shoulder angle: ", wrist_elbow_shoulder_angle)
-        print("elbow-shoulder-ankle angle: ", elbow_shoulder_ankle_angle)
-        print("shoulder-hip-ankle angle: ", shoulder_hip_ankle_angle)
+        # print("wrist_elbow_shoulder angle: ", wrist_elbow_shoulder_angle)
+        # print("elbow-shoulder-ankle angle: ", elbow_shoulder_ankle_angle)
+        # print("shoulder-hip-ankle angle: ", shoulder_hip_ankle_angle)
         print("\n")
 
-        # Check if push-up position is detected based on the conditions
-        if(wrist_elbow_shoulder_angle < 180) and (elbow_shoulder_ankle_angle<90 or elbow_shoulder_ankle_angle>170) and (shoulder_hip_ankle_angle<180):
-            print("Pushup detected")
-            push_up = True
+        if body_angle > 50 :
+            print("elbow-shoulder-hip angle: ", elbow_shoulder_hip_angle)
+            print("wrist-elbow-shoulder angle: ", wrist_elbow_shoulder_angle)
+            if (wrist_elbow_shoulder_angle < 170) and (elbow_shoulder_hip_angle < 170):
+                print("Pullup detected")
+                pull_up = True
+            else:
+                pull_up = False
 
-        else:
-            push_up = False
+        elif body_angle <50:
+            if(wrist_elbow_shoulder_angle < 180) and (elbow_shoulder_ankle_angle<90 or elbow_shoulder_ankle_angle>170) and (shoulder_hip_ankle_angle<180):
+                print("Pushup detected")
+                push_up = True
+            else:
+                push_up = False
+
+        # Check if push-up position is detected based on the conditions
+
 
         # push_up  = True
         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -89,8 +108,12 @@ with mp_pose.Pose(min_detection_confidence=0.7, min_tracking_confidence=0.7) as 
         # print(results)
         if push_up:
             cv2.putText(frame, 'Push-up Detected', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        
+        elif pull_up:
+            cv2.putText(frame, 'Pull-up Detected', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
         else:
-            cv2.putText(frame, 'No Push-up Detected', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            cv2.putText(frame, 'Other activity Detected', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
         mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS, mp_drawing.DrawingSpec(color=(100,100,100), thickness=1, circle_radius=3), mp_drawing.DrawingSpec(color=(0,0,0), thickness=1, circle_radius=3))
 
